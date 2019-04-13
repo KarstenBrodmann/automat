@@ -1,0 +1,7 @@
+digraph G {
+  rankdir=LR;
+  node[shape=circle, fontsize=10];
+  edge[fontsize=10,arrowsize=0.7];
+  
+  s -> t [label="x"];
+}

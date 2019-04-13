@@ -1,0 +1,180 @@
+\documentclass[draft=false]{scrartcl} 
+\KOMAoptions {
+	parskip=half
+}
+\usepackage{a4wide}
+\usepackage[ngerman]{babel} 
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}
+
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning}
+\usepackage{listings} 
+\usepackage{textcomp}
+\lstset{literate=%
+  {Ö}{{\"O}}1
+  {Ä}{{\"A}}1
+  {Ü}{{\"U}}1
+  {ß}{{\ss}}2
+  {ü}{{\"u}}1
+  {ä}{{\"a}}1
+  {ö}{{\"o}}1
+}
+\lstset{
+	% basicstyle=\ttfamily\scriptsize\mdseries,  % schick, aber evtl. zu kleine Schrift
+	basicstyle=\ttfamily\small,                  % nicht so schick, aber m.E. angemessener
+	numbers=left,
+	numberstyle=\tiny,
+	stepnumber=1,
+	language=Java,
+	breaklines=true,
+	frame=none,
+	showstringspaces=false,
+	tabsize=4,
+	captionpos=b,
+	float=htbp,
+	upquote=true
+}
+\usepackage{courier}
+%% Packages fuer Formeln 
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+\usepackage[bottom,hang]{footmisc}
+\setlength{\footnotemargin}{0pt}
+
+\newenvironment{achtung}[1][Achtung]{%
+	\rule{\textwidth}{1pt}\\%
+	\textbf{#1}: %
+}{%
+	\\\rule[1ex]{\textwidth}{1pt}%
+}
+
+
+\begin{document}
+
+\title{Automat \\
+zur Prüfung der ganzzahligen Teilbarkeit \\
+einer Dualzahl durch drei}
+\author{Karsten Brodmann}
+\date{15. Februar 2017}
+\maketitle
+
+\section{Aufgabenstellung} 
+
+Schreibe ein Programm, welches eine beliebig lange Dualzahl einliest und bestimmt, ob diese Zahl ganzzahlig durch 3 teilbar ist.
+
+\section{Lösung} 
+
+Der erste, naive Gedanke zur Lösung könnte sein:
+
+\begin{itemize} 
+\item bestimme den Wert eingegebenen Dualzahl, 
+\item berechne den Rest einer ganzzahligen Division durch 3, 
+\item ist der Rest 0, ist die eingegebene Dualzahl ganzzahlig durch 3
+      teilbar.
+\end{itemize}
+
+Dieser Gedanke ist insoweit nicht zielführend, als alle im Computer darstellbaren Zahlen in ihrem zulässigen Wertebereich eingeschränkt sind. Bei den meisten aktuellen Programmiersprachen sind die größten zulässigen Ganzzahlen als 64-Bit-Werte implementiert. Die Bedingung einer beliebigen Länge des Eingabewertes würde somit verletzt.
+
+\begin{table}[!htbp] \begin{center} \begin{tabular}{|c|c|c|} 
+\hline
+ $w$ & $w0$ & $w1$ \\
+\hline 
+\hline 
+$3x+0$ & $6x+0$ & $6x+1$                                   \\ 
+Rest 0 & Rest 0 & Rest 1                                   \\ 
+\hline 
+$3x+1$ & $6x+2$ & $6x+3$                                   \\ 
+Rest 1 & Rest 2 & Rest 0                                   \\
+\hline 
+$3x+2$ & $6x+4$ & $6x+5$                                   \\ 
+Rest 2 & Rest 1 & Rest 2                                   \\ 
+\hline
+\end{tabular}\end{center}
+	\caption{Zustände bei der ganzzahligen Division durch 3}
+	\label{tab:zustaende}
+\end{table}
+
+Eine ganzzahlige Division durch 3 ergibt entweder 0, 1 oder 2 als Rest. Nehmen wir an, wir haben eine Dualzahl, deren Rest bei der ganzzahligen Division durch 3 bekannt ist. Was können wir dann über die Teilbarkeit aussagen, wenn wir unsere Dualzahl um ein Bit (0 oder 1) erweitern, also auf der rechten Seite anfügen?
+
+Betrachten wir Tabelle \ref{tab:zustaende}. Augenscheinlich lässt sich bei Kenntnis des aktuellen Restes auf den sich ergebenden Rest schließen, wenn die Dualzahl um ein Bit erweitert wird.
+
+Wir haben also 3 zu unterscheidende Zustände, klare Übergänge beim Ergänzen von Bits, welche mit 0 und 1 die einzig zulässigen Eingabezeichen sind. -- Das riecht nach einem endlichen Automaten. Ein endlicher Automat $A$ ist ein 5-Tupel $A=(S,\Sigma ,\delta ,s_{0},F )$ mit 
+
+\begin{align} 
+S  &= \text{endliche Zustandsmenge}             \nonumber \\ 
+\Sigma &= \text{endliches Eingabealphabet}      \nonumber \\
+\delta : S \times \Sigma \rightarrow S &= \text{Überführungsfunktion}  
+                                                \nonumber \\ 
+s_{0} \in S &= \text{Startzustand}			    \nonumber \\ 
+F \subseteq S &= \text{Menge der Endzustände}   \nonumber 
+\end{align} 
+
+Ein Wort $ w \in \Sigma{}^*$  wird akzeptiert, falls 
+\begin{align} 
+&\delta^*(s_{0},w) \in F                        \nonumber \\ 
+&\delta^*(s_{0}, x_{0}x_{1}x_{2}\dots{}x_{n-1}) =
+\delta(\dots\delta(\delta(\delta(s_{0},x_{0}),x_{1}),x_{2})\dots{}x_{n-1})
+                                                \nonumber 
+\end{align} 
+
+Die Wirkungsweise der Überführungsfunktion  kann durch Zustandsüberführungsgraphen beschrieben werden. In diesem Graphen führt eine mit $w$ beschriftete Kante von Knoten $s_{m}$ zu Knoten $s_{n}$, wenn der Wert $w$ des Eingabealphabets vom Zustand $s_{m}$ zum Zustand $s_{n}$ führt.
+
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}[auto, thick]
+		\node[state] (sm) {$s_{m}$};
+		\node[state, right=of sm] (sn) {$s_{n}$};
+		\path (sm) edge[->] node {$w$} (sn);
+	\end{tikzpicture}
+	\caption{Graphische Darstellung einer Überführungsfunktion}
+	\label{fig:graph}
+\end{figure}
+
+Auf unsere Aufgabenstellung angewendet: $A$ soll durch 3 teilbare Dualzahlen erkennen. Hierzu spendieren wir drei Zustände mit der Bedeutung "`Rest 0"', "`Rest 1"' und "`Rest 2"'. Wenn ein String $w$, dessen Rest als 0, 1 oder 2 bekannt ist, mit den Zeichen 0 oder 1 verlängert wird, ergeben sich die aus Tabelle 1 bekannten Zustände.  Daraus ergibt sich folgender Automat:
+
+\begin{figure}[htbp!]
+	\centering
+	\begin{tikzpicture}[auto, thick, initial text=]
+		\node[initial, accepting, state] (r0) {$r_0$};
+		\node[state, right=of r0] (r1) {$r_1$};
+		\node[state, right=of r1] (r2) {$r_2$};
+		\path (r0) edge[->, loop above] node {0} ()
+		      (r0) edge[->, bend left]  node {1} (r1)
+		      (r1) edge[->, bend left]  node {1} (r0);
+		\path (r1) edge[->, bend left]  node {0} (r2)
+			  (r2) edge[->, bend left]  node {0} (r1);
+		\path (r2) edge[->, loop above] node {1} ();
+	\end{tikzpicture}
+	\caption{Überführungsfunktion $\delta$ des Automaten}
+	\label{fig:automat}
+\end{figure}
+
+Startzustand  ist $r_0$.  Dazu gehört ein Zustandsüberführungsgraph  mit den Knoten $r_0$, $r_1$ und $r_2$, welche die Zustände beschreiben, wenn für den bislang eingelesenen String die Division durch 3 den Rest 0, 1 oder 2 ergibt. An der Kante steht das jeweils nächste Bit der Dualzahl, die von links nach rechts abgearbeitet wird.
+Wenn wir diesen Automaten nun mit einer beliebig langen Folge von Bits füttern, nimmt er seinen jeweils aktuellen Zustand und wendet auf das nächste Bit die Überführungsfunktion an, die in Tabelle 1 ablesbar ist. Das Ergebnis ist wieder ein Zustand. Dieses Vorgehen wiederholt der Automat bis alle Eingabezeichen abgearbeitet sind.
+
+Zwar hat der Automat keine Kenntnis über den wahren Wert der eingegebenen Dualzahl, er braucht diese Kenntnis aber auch nicht. Klein aber fleißig prüft er die ganzzahlige Teilbarkeit durch 3.
+
+\lstinputlisting[label=automat,caption=Automat]{Code/Automat.java}
+
+Ich habe hier Java als Programmiersprache gewählt. Die Programmiersprache ist sehr beliebt und entsprechend weit verbreitet. Der Compiler kann als freie Software im Internet heruntergeladen werden und ist für viele Plattformen verfügbar. Die Objektorientierung von Java spielt hier keine Rolle. Der Code sollte auch Programmierern verständlich sein, die ansonsten andere Programmiersprachen verwenden.
+
+Um die Eingabe einfacher und übersichtlicher zu gestalten, habe die die \emph{AlgoTools} der Universität Osnabrück, von Prof.\ Dr.\ Vornberger, verwendet. 
+
+Sämtliche EIngabezeichen werden in einem Stück gelesen und im Feld \verb|zeile| gespeichert. Es liegt in der Verantwortung des Anwenders, sich an das Eingabealphabet (0 und 1) zu halten. Weil Zeichen in Java ganze Zahlen sind, wird durch Subtraktion des Zeichens \verb|'0'| das jeweils aktuelle Eingabezeichen in seinen numerischen Wert umgerechnet. Dieser dient in Verbindung mit dem aktuellen Status als Index, um im Feld \verb|delta|, welches die Überführungsfunktion (siehe auch Tabelle 1) darstellt, den sich ergebenden Zustand auszulesen. Die Schleife endet, wenn alle Eingabezeichen verarbeitet wurden.
+
+\begin{achtung}[Hinweis] %
+Der potentiellen Unendlichkeit der Eingabe steht die begrenzte Anzahl der Eingabezeichen am Eingabeprompt sowie der verfügbare Speicher für das Datenfeld \verb|zeile| entgegen. Als Ausweg bietet es sich an, die Eingabezeichen zeichenweise in einer Schleife einzulesen und die zu prüfende Dualzahl nötigenfalls in einer Textdatei zu speichern. Ersteres spart Hauptspeicher. Ist die zu prüfende Zahl in einer Textdatei gespeichert, dann bekommt das Programm die Dualzahl via Eingabeumleitung zugeführt. Da das Programm von der Standardeingabe liest, funktioniert die Eingabeumlenkung auch jetzt bereits.
+\end{achtung}
+
+ Eingabe aus Datei durch Umlenkung des Eingabestroms in der Shell:
+
+\verb| $ java Automat <dualzahl.txt|
+
+Zum Schluss wird der erreichte Zustand darauf geprüft, ob es sich um den Status 0 handelt. Dieser signalisiert, so wurde es vorher definiert, die ganzzahlige Teilbarkeit durch 3 ohne Rest. Das Ergebnis der Prüfung wird auf dem Bildschirm ausgegeben.
+\\\\
+\textsl{Karsten Brodmann, 15.02.2017} 
+\end{document}
